@@ -1,20 +1,76 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello HomeController!{% endblock %}
+{% block title %}Acceuil{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <div class="container d-flex flex-row justify-content-center mt-5">
+        <!-- Conteneur des cards projets -->
+        <div class="d-flex flex-row flex-wrap justify-content-center" style="width: 90% !important;" id="project-container">
+            <!-- Bouton Card "+" -->
+            <div class="mx-2" id="add-project-btn">
+                <div class="card text-center border-primary shadow-sm">
+                    <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                        <div class="text-primary display-4 fw-bold">+</div>
+                        <p class="mt-1 text-primary">Créer un projet</p>
+                    </div>
+                </div>
+            </div>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+            <!-- Les nouvelles cards seront ajoutées ici -->
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>/Users/thomasking/Documents/Dev/Symfony/plantogether/src/Controller/HomeController.php</code></li>
-        <li>Your template at <code>/Users/thomasking/Documents/Dev/Symfony/plantogether/templates/home/index.html.twig</code></li>
-    </ul>
-</div>
+            <!-- Les projets existant seront afficher ici -->
+            {% if projects is defined and variable is not empty %}
+                {# Code si la variable existe et n'est pas vide #}
+            {% else %}
+                <h3>Vous n'avez pas de projets pour l'instant</h3>
+                {# Code si la variable n'existe pas ou est vide #}
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+        $(document).ready(function () {
+            let projectCount = 0;
+
+            // Fonction pour ajouter une nouvelle card juste après le bouton de création
+            $('#add-project-btn').on('click', function () {
+                projectCount++; // Incrémentation du compteur de projets
+
+                // Création de la nouvelle card
+                const newCard = `
+                    <div class="mx-2 mb-4">
+                        <div class="card border-secondary shadow-sm">
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="project-label-${projectCount}" class="form-label">Nom du projet</label>
+                                    <input type="text" class="form-control" id="project-label-${projectCount}" placeholder="Entrez un nom">
+                                </div>
+                                <button class="btn btn-success save-project-btn" data-id="${projectCount}">Enregistrer</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Ajout de la nouvelle card juste après le bouton de création
+                $('#add-project-btn').after(newCard); // Utilise .after() pour l'ajouter après le bouton
+            });
+
+            // Fonction pour gérer l'enregistrement d'un projet
+            $(document).on('click', '.save-project-btn', function () {
+                const projectId = $(this).data('id');
+                const input = $(`#project-label-${projectId}`);
+                const label = input.val().trim();
+
+                if (label === '') {
+                    alert('Veuillez entrer un nom pour le projet.');
+                    return;
+                }
+
+                alert(`Projet "${label}" enregistré avec succès !`);
+                // Ajoutez ici une requête AJAX pour envoyer les données au serveur si nécessaire.
+            });
+        });
+    </script>
 {% endblock %}
