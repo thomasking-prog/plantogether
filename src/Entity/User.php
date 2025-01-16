@@ -53,9 +53,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Project::class, mappedBy: 'creator')]
     private Collection $projects;
 
+    /**
+     * @var Collection<int, Participate>
+     */
+    #[ORM\OneToMany(targetEntity: Participate::class, mappedBy: 'member')]
+    private Collection $participations;
+
+    /**
+     * @var Collection<int, Affect>
+     */
+    #[ORM\OneToMany(targetEntity: Affect::class, mappedBy: 'member')]
+    private Collection $affectations;
+
     public function __construct()
     {
         $this->projects = new ArrayCollection();
+        $this->participations = new ArrayCollection();
+        $this->affectations = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -181,6 +195,66 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($project->getCreator() === $this) {
                 $project->setCreator(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Participate>
+     */
+    public function getParticipations(): Collection
+    {
+        return $this->participations;
+    }
+
+    public function addParticipation(Participate $participation): static
+    {
+        if (!$this->participations->contains($participation)) {
+            $this->participations->add($participation);
+            $participation->setMember($this);
+        }
+
+        return $this;
+    }
+
+    public function removeParticipation(Participate $participation): static
+    {
+        if ($this->participations->removeElement($participation)) {
+            // set the owning side to null (unless already changed)
+            if ($participation->getMember() === $this) {
+                $participation->setMember(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Affect>
+     */
+    public function getAffectations(): Collection
+    {
+        return $this->affectations;
+    }
+
+    public function addAffectation(Affect $affectation): static
+    {
+        if (!$this->affectations->contains($affectation)) {
+            $this->affectations->add($affectation);
+            $affectation->setMember($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAffectation(Affect $affectation): static
+    {
+        if ($this->affectations->removeElement($affectation)) {
+            // set the owning side to null (unless already changed)
+            if ($affectation->getMember() === $this) {
+                $affectation->setMember(null);
             }
         }
 
