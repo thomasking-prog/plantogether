@@ -20,6 +20,11 @@
             {% include 'navbar.html.twig' %}
         </header>
         <main>
+
+            <div id="alert" class="alert alert-dismissible fade show" role="alert" style="display:none;">
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <span id="alert-message"></span>
+            </div>
             {% block body %}{% endblock %}
         </main>
     </body>

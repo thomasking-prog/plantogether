@@ -6,6 +6,7 @@ use App\Repository\TaskRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: TaskRepository::class)]
 class Task
@@ -18,17 +19,20 @@ class Task
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $endedAt = null;
 
     #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $estimatedTime = null;
+    #[Groups('task:read')]
+    private ?float $estimatedTime = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups('task:read')]
     private ?string $formatTime = null;
 
     #[ORM\ManyToOne(inversedBy: 'tasks')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups('task:read')]
     private ?Priority $priority = null;
 
     #[ORM\ManyToOne(inversedBy: 'tasks')]
@@ -37,6 +41,7 @@ class Task
 
     #[ORM\ManyToOne(inversedBy: 'tasks')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups('task:read')]
     private ?Statut $statut = null;
 
     /**
@@ -44,6 +49,10 @@ class Task
      */
     #[ORM\OneToMany(targetEntity: Affect::class, mappedBy: 'task')]
     private Collection $members;
+
+    #[ORM\Column(length: 255)]
+    #[Groups('task:read')]
+    private ?string $label = null;
 
     public function __construct()
     {
@@ -79,12 +88,12 @@ class Task
         return $this;
     }
 
-    public function getEstimatedTime(): ?\DateTimeImmutable
+    public function getEstimatedTime(): ?float
     {
         return $this->estimatedTime;
     }
 
-    public function setEstimatedTime(?\DateTimeImmutable $estimatedTime): static
+    public function setEstimatedTime(?float $estimatedTime): static
     {
         $this->estimatedTime = $estimatedTime;
 
@@ -165,6 +174,18 @@ class Task
                 $member->setTask(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getLabel(): ?string
+    {
+        return $this->label;
+    }
+
+    public function setLabel(string $label): static
+    {
+        $this->label = $label;
 
         return $this;
     }

@@ -3,6 +3,179 @@
 {% block title %}{% endblock %}
 
 {% block body %}
-    {{ project.label }}
-    {{ project.statut.label }}
+
+    <div class="container-fluid d-flex justify-content-center gap-5 mt-5">
+        <div class="d-flex gap-3 overflow-hidden overflow-md-auto scroll-mobile align-items-start">
+            {% for statut in statuts %}
+                <div class="d-flex flex-column border border-secondary shadow-sm p-3 gap-3 justify-content-between statut-col">
+                    {{ statut.label }}
+                    <button id="createTask-{{ statut.id }}" class="btn btn-secondary" data-id="{{ statut.id }}">
+                        <i class="bi bi-plus-lg"></i>
+                        Ajouter une tâche
+                    </button>
+                    {% for task in tasks %}
+                        {% if task.statut.id == statut.id %}
+                            <div class="card w-100 task-card" data-id="{{ task.id }}">
+                                <div class="card-body">
+                                    <p class="card-text">{{ task.label }}</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="taskManager" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true" data-id="">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">Création d'une nouvelle tâche</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {{ form_start(taskForm) }}
+                        {{ form_widget(taskForm) }}
+                    {{ form_end(taskForm) }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <button type="button" class="btn btn-primary" id="confirm" data-action="">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block stylesheets %}
+
+    <style>
+        .card {
+            animation: border 2s ease-in-out;
+        }
+
+        .card:hover {
+            cursor: pointer;
+            border-color: #555555;
+        }
+
+        @media (max-width: 768px) {
+            .scroll-mobile {
+                overflow-x: auto; /* Active le scroll horizontal */
+                white-space: nowrap; /* Empêche les colonnes de passer à la ligne */
+                flex-wrap: nowrap; /* Empêche Bootstrap de casser la ligne */
+                scroll-behavior: smooth; /* Scroll fluide */
+            }
+
+            .statut-col {
+                min-width: 300px; /* Largeur minimale pour chaque colonne */
+            }
+
+            /* Cacher la scrollbar sur mobile pour un rendu plus propre */
+            .scroll-mobile::-webkit-scrollbar {
+                display: none;
+            }
+        }
+    </style>
+
+{% endblock %}
+
+{% block javascripts %}
+
+    <script>
+        $(document).ready(function() {
+
+            let tasks = {{ tasks|json_encode|raw }};
+            let taskManager = $('#taskManager');
+            let modalDialog = taskManager.find('.modal-dialog');
+            let modalContent = modalDialog.find('.modal-content');
+            let modalBody = modalContent.find('.modal-body');
+            let modalFooter = modalContent.find('.modal-footer');
+
+            let form = modalBody.find('form')[0];
+            let confirmButton = modalFooter.find('#confirm');
+
+            let alertDiv = $('#alert');
+            let alertMessage = $('#alert-message');
+
+            function showAlert(status, message) {
+                console.log(status, message);
+                if (status === 'success') {
+                    alertDiv.removeClass('alert-danger alert-warning alert-info').addClass('alert-success');
+                } else {
+                    alertDiv.removeClass('alert-success alert-warning alert-info').addClass('alert-danger');
+                }
+                alertMessage.text(message);
+                alertDiv.fadeIn();
+            }
+
+            $("[id^='createTask-']").click(function() {
+                $('#modalLabel')[0].innerText = "Création d'une tâche";
+
+                let statutId = this.getAttribute('data-id');
+                taskManager.data("id", statutId); // Stocker l'ID dans la modale
+                taskManager.modal('show');
+                confirmButton.data('action', 'create');
+                form.reset();
+            });
+
+            $('#confirm').click(function() {
+                let confirmAction = confirmButton.data('action'); // 'edit' ou 'create' par ex.
+                let formData = new FormData(form);
+
+                $.ajax({
+                    url: `/task/${confirmAction}`,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                })
+                    .done(response => {
+                        showAlert(response.status, response.message);
+                        //location.reload(); // ou bien une mise à jour du DOM en JS
+                    })
+                    .fail(error => {
+                        showAlert(error.status, error.message);
+                    });
+            });
+
+            // Fonction pour remplir le formulaire
+            function fillTaskForm(data) {
+                for (const key in data) {
+                    const field = document.querySelector(`[name="task[${key}]"]`);
+
+                    if (field) field.value = data[key];
+                }
+            }
+
+            $('.task-card').click(function () {
+
+                let taskId = $(this).data('id')
+                let data = tasks[taskId];
+
+                taskManager.data("id", data.statut?.id);
+
+                const taskData = {
+                    id: data.id || 0,
+                    label: data.label || "Nom Inconnue",
+                    estimatedTime: data.estimatedTime || "0",
+                    formatTime: data.formatTime || "h",
+                    priority: data.priority?.id || 0,
+                    project: data.project?.id || 0,
+                    statut: data.statut?.id || 0,
+                };
+
+                $('#modalLabel')[0].innerText = "Gestion d'une tâche";
+                fillTaskForm(taskData);
+
+                confirmButton.data('action', 'edit');
+                taskManager.modal('show');
+            });
+
+        })
+    </script>
+
 {% endblock %}

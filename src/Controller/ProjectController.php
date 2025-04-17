@@ -2,8 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\Priority;
 use App\Entity\Project;
 use App\Entity\Statut;
+use App\Entity\Task;
+use App\Form\ProjectType;
+use App\Form\TaskType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -52,10 +56,40 @@ final class ProjectController extends AbstractController
     }
 
     #[Route('/{id}', name: '_show')]
-    public function show(Project $project): Response
+    public function show(Project $project, EntityManagerInterface $em): Response
     {
+
+        $statuts = $em->getRepository(Statut::class)->findAll();
+
+        $taskArray = [];
+        foreach ($project->getTasks()->toArray() as $task) {
+            $taskArray[$task->getId()] = [
+                'id' => $task->getId(),
+                'label' => $task->getLabel(),
+                'statut' => [
+                    'id' => $task->getStatut()?->getId(),
+                    'label' => $task->getStatut()?->getLabel(),
+                ],
+                'priority' => [
+                    'id' => $task->getPriority()?->getId(),
+                    'label' => $task->getPriority()?->getLabel(),
+                ],
+                'project' => [
+                    'id' => $task->getProject()?->getId(),
+                    'label' => $task->getProject()?->getLabel(),
+                ],
+                'estimatedTime' => $task->getEstimatedTime(),
+                'formatTime' => $task->getFormatTime(),
+            ];
+        }
+
+        $taskForm = $this->createForm(TaskType::class);
+
         return $this->render('project/show.html.twig', [
             'project' => $project,
+            'statuts' => $statuts,
+            'tasks' => $taskArray,
+            'taskForm' => $taskForm->createView(),
         ]);
     }
 
