@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\Entity\Project;
+use App\Entity\Statut;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -15,11 +17,25 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class HomeController extends AbstractController
 {
     #[Route('/', name: 'home')]
-
-    public function index(): Response
+    public function index(EntityManagerInterface $em): Response
     {
+
+        $projet = new Project();
+        $statut = new Statut();
+        $statut->setLabel('Non définis');
+        $projet->setCreator($this->getUser())->setLabel('Test')->setStatut($statut);
+
+        $projectRepository = $em->getRepository(Project::class);
+        $projects = $projectRepository->findAll();
+
+        //$em->persist($statut);
+        //$em->persist($projet);
+        //$em->flush();
+
+
         return $this->render('home/index.html.twig', [
             'controller_name' => 'HomeController',
+            'projects' => $projects,
         ]);
     }
 }

@@ -1,20 +1,189 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello HomeController!{% endblock %}
+{% block title %}Acceuil{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    <div class="container d-flex flex-row justify-content-center mt-5">
+        <!-- Conteneur des cards projets -->
+        <div class="project-grid" id="project-container">
+            <!-- Bouton Card "+" -->
+            <div class="mx-2" id="add-project-btn">
+                <div class="card text-center border-primary shadow-sm">
+                    <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                        <div id="plus" class="text-primary display-4 fw-bold">+</div>
+                        <p class="mt-1 text-primary">Créer un projet</p>
+                    </div>
+                </div>
+            </div>
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>/Users/thomasking/Documents/Dev/Symfony/plantogether/src/Controller/HomeController.php</code></li>
-        <li>Your template at <code>/Users/thomasking/Documents/Dev/Symfony/plantogether/templates/home/index.html.twig</code></li>
-    </ul>
-</div>
+            <!-- Les nouvelles cards seront ajoutées ici -->
+
+            <!-- Les projets existant seront affichés ici -->
+            {% if projects is defined and projects is not empty %}
+                {% for project in projects %}
+                    <div class="card text-center border-primary shadow-sm" data-id="{{ project.id }}">
+                        <div class="card-body d-flex flex-column justify-content-center">
+                            <a href="{{ path('project_show', {id: project.id}) }}" class="stretched-link text-decoration-none">{{ project.label }}</a>
+                        </div>
+                        <i class="bi bi-trash text-danger hover-icon" data-id="{{ project.id }}"></i> <!-- Icône affichée au survol -->
+                    </div>
+                {% endfor %}
+            {% else %}
+                <h3>Vous n'avez pas de projets pour l'instant</h3>
+            {% endif %}
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">Confirmation de suppression</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Êtes-vous sûr de vouloir supprimer ce projet ?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-danger" id="confirmDelete">Supprimer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}
+    <style>
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* 4 éléments max par ligne */
+            gap: 1.5rem; /* Espacement entre les items */
+            justify-content: center;
+            width: 90%;
+        }
+
+        .card {
+            position: relative;
+            height: 1rem; /* Hauteur fixe pour toutes les cartes */
+            min-height: 10rem; /* Garde une cohérence minimale */
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Centre le contenu verticalement */
+            align-items: center; /* Centre le contenu horizontalement */
+        }
+
+        .hover-icon {
+            position: absolute;
+            top: 5%;
+            right: 5%;
+            font-size: 1rem;
+            z-index: 2;
+            cursor: pointer;
+
+            opacity: 0; /* Masquer par défaut */
+            transform: scale(0.8); /* Réduire légèrement la taille */
+            transition: opacity 0.3s ease, transform 0.3s ease; /* Animation fluide */
+        }
+
+        .card:hover .hover-icon {
+            opacity: 1; /* Rendre visible */
+            transform: scale(1); /* Revenir à la taille normale */
+        }
+
+        .card a {
+            max-width: 10rem;
+        }
+    </style>
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+        $(document).ready(function () {
+            let projectCount = 0;
+
+            // Fonction pour ajouter une nouvelle card juste après le bouton de création
+            $('#add-project-btn').on('click', function () {
+                projectCount++; // Incrémentation du compteur de projets
+
+                // Création de la nouvelle card
+                const newCard = `
+                    <div class="mx-2 mb-4">
+                        <div class="card border-secondary shadow-sm">
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="project-label-${projectCount}" class="form-label">Nom du projet</label>
+                                    <input type="text" class="form-control" id="project-label-${projectCount}" placeholder="Entrez un nom">
+                                </div>
+                                <button class="btn btn-success save-project-btn" data-id="${projectCount}">Enregistrer</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Ajout de la nouvelle card juste après le bouton de création
+                $('#add-project-btn').after(newCard); // Utilise .after() pour l'ajouter après le bouton
+            });
+
+            // Fonction pour gérer l'enregistrement d'un projet
+            $(document).on('click', '.save-project-btn', function () {
+                const projectId = $(this).data('id');
+                const input = $(`#project-label-${projectId}`);
+                const label = input.val().trim();
+
+                if (label === '') {
+                    alert('Veuillez entrer un nom pour le projet.');
+                    return;
+                }
+
+                // Requête AJAX pour envoyer les données au serveur
+                $.ajax({
+                    url: '/project/create', // Chemin vers votre route
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ label: label }), // Données à envoyer
+                    success: function () {
+                        window.location.reload();
+                    },
+                    error: function (xhr) {
+                        const errorMessage = xhr.responseJSON?.error || 'Une erreur est survenue.';
+                        alert(errorMessage); // Affichez le message d'erreur depuis le serveur
+                    },
+                });
+            });
+
+            // Fonction pour gérer la suppression d'un projet via l'icône de corbeille
+            $(document).on('click', '.hover-icon', function () {
+                const projectId = $(this).data('id');
+                const projectCard = $(this).closest('.card');
+
+                // Stocker les informations du projet dans le bouton de confirmation
+                $('#confirmDelete').data('id', projectId).data('card', projectCard);
+
+                // Afficher le modal
+                $('#deleteConfirmationModal').modal('show');
+            });
+
+            $(document).on('click', '#confirmDelete', function () {
+                const projectId = $(this).data('id');
+                const projectCard = $(this).data('card');
+
+                // Requête AJAX pour supprimer le projet
+                $.ajax({
+                    url: '/project/delete/' + projectId,
+                    method: 'DELETE',
+                    success: function () {
+                        projectCard.remove(); // Retirer la carte du DOM
+                        $('#deleteConfirmationModal').modal('hide');
+                    },
+                    error: function (xhr) {
+                        const errorMessage = xhr.responseJSON?.error || 'Une erreur est survenue lors de la suppression.';
+                        alert(errorMessage);
+                    }
+                });
+            });
+        });
+    </script>
 {% endblock %}
