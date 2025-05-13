@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: TaskRepository::class)]
 class Task
@@ -24,24 +25,30 @@ class Task
 
     #[ORM\Column(nullable: true)]
     #[Groups('task:read')]
+    #[Assert\NotBlank]
+    #[Assert\Positive]
     private ?float $estimatedTime = null;
 
     #[ORM\Column(length: 255)]
     #[Groups('task:read')]
+    #[Assert\NotNull]
     private ?string $formatTime = null;
 
     #[ORM\ManyToOne(inversedBy: 'tasks')]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups('task:read')]
+    #[Assert\NotNull]
     private ?Priority $priority = null;
 
     #[ORM\ManyToOne(inversedBy: 'tasks')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull]
     private ?Project $project = null;
 
     #[ORM\ManyToOne(inversedBy: 'tasks')]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups('task:read')]
+    #[Assert\NotNull]
     private ?Statut $statut = null;
 
     /**
@@ -52,6 +59,7 @@ class Task
 
     #[ORM\Column(length: 255)]
     #[Groups('task:read')]
+    #[Assert\NotBlank(message: "Le nom de la tâche est obligatoire.")]
     private ?string $label = null;
 
     public function __construct()

@@ -103,14 +103,34 @@
 
             function showAlert(status, message) {
                 console.log(status, message);
+
                 if (status === 'success') {
-                    alertDiv.removeClass('alert-danger alert-warning alert-info').addClass('alert-success');
+                    alertDiv.removeClass('alert-danger alert-warning alert-info');
+                    alertDiv.addClass('alert-success');
                 } else {
-                    alertDiv.removeClass('alert-success alert-warning alert-info').addClass('alert-danger');
+                    alertDiv.removeClass('alert-success alert-warning alert-info');
+                    alertDiv.addClass('alert-danger');
                 }
+
                 alertMessage.text(message);
                 alertDiv.fadeIn();
+
+                setTimeout(() => {
+                    alertDiv.fadeOut();
+                }, 5000);
             }
+
+
+            let status = localStorage.getItem('alertStatus');
+            let message = localStorage.getItem('alertMessage');
+
+            if (status && message) {
+                showAlert(status, message);
+                // Nettoyer après affichage
+                localStorage.removeItem('alertStatus');
+                localStorage.removeItem('alertMessage');
+            }
+
 
             $("[id^='createTask-']").click(function() {
                 $('#modalLabel')[0].innerText = "Création d'une tâche";
@@ -134,11 +154,13 @@
                     contentType: false,
                 })
                     .done(response => {
-                        showAlert(response.status, response.message);
-                        //location.reload(); // ou bien une mise à jour du DOM en JS
+                        localStorage.setItem('alertStatus', response.status);
+                        localStorage.setItem('alertMessage', response.message);
+                        //location.reload();
                     })
                     .fail(error => {
-                        showAlert(error.status, error.message);
+                        showAlert(error.responseJSON.status, error.responseJSON.message);
+                        taskManager.modal('hide');
                     });
             });
 

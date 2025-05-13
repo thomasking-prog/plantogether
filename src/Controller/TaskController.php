@@ -20,51 +20,31 @@ final class TaskController extends AbstractController
     #[Route('/create', name: '_create')]
     public function create(Request $request, EntityManagerInterface $em): JsonResponse
     {
-        // Récupération des données envoyées en AJAX
-        $data = $request->request->all();
-
-        if (!isset($data['task']['project']) || !isset($data['task']['statut']) || empty($data['task']['label'])) {
-            return new JsonResponse(
-                [
-                    'status' => 'error',
-                    'message' => 'Données invalides.'
-                ], 400);
-        }
-
-        // Création de la tâche et hydratation manuelle
         $task = new Task();
-        $task->setCreatedAt(new \DateTimeImmutable());
-        $task->setLabel($data['task']['label']);
-        $task->setFormatTime($data['task']['formatTime']);
-        $task->setEstimatedTime($data['task']['estimatedTime']);
 
-        // Récupération du projet et du statut
-        $priority = $em->getRepository(Priority::class)->find($data['task']['priority']);
-        $project = $em->getRepository(Project::class)->find($data['task']['project']);
-        $statut = $em->getRepository(Statut::class)->find($data['task']['statut']);
+        $form = $this->createForm(TaskType::class, $task);
+        $form->handleRequest($request);
 
-        if (!$project || !$statut) {
-            return new JsonResponse(
-                [
-                    'status' => 'error',
-                    'message' => 'Projet ou statut invalide.'
-                ], 400);
+        if (!$form->isSubmitted() || !$form->isValid()) {
+
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'Données invalides.',
+            ], 400);
         }
 
-        $task->setPriority($priority);
-        $task->setProject($project);
-        $task->setStatut($statut);
+        // Données valides : enregistrer la tâche
+        $task->setCreatedAt(new \DateTimeImmutable());
 
-        // Persistance en base de données
         $em->persist($task);
         $em->flush();
 
-        return new JsonResponse(
-            [
-                'status' => 'success',
-                'message' => 'Tâche créée avec succès !'
-            ]);
+        return new JsonResponse([
+            'status' => 'success',
+            'message' => 'Tâche créée avec succès !'
+        ]);
     }
+
 
     #[Route('/edit', name: '_edit', methods: ['POST'])]
     public function edit(Request $request, EntityManagerInterface $em): JsonResponse
