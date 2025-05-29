@@ -2,12 +2,16 @@
 
 namespace App\Controller;
 
+use App\Entity\Participate;
 use App\Entity\Priority;
 use App\Entity\Project;
 use App\Entity\Statut;
 use App\Entity\Task;
+use App\Entity\User;
 use App\Form\ProjectType;
 use App\Form\TaskType;
+use App\Repository\ParticipateRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -58,7 +62,6 @@ final class ProjectController extends AbstractController
     #[Route('/{id}', name: '_show')]
     public function show(Project $project, EntityManagerInterface $em): Response
     {
-
         $statuts = $em->getRepository(Statut::class)->findAll();
 
         $taskArray = [];
@@ -80,18 +83,117 @@ final class ProjectController extends AbstractController
                 ],
                 'estimatedTime' => $task->getEstimatedTime(),
                 'formatTime' => $task->getFormatTime(),
+                'assignedMembers' => array_map(fn($assigment) => [
+                    'id' => $assigment->getMember()?->getId(),
+                    'name' => $assigment->getMember()?->getName(),
+                ], $task->getMembers()->toArray()),
             ];
         }
 
         $taskForm = $this->createForm(TaskType::class);
+
+        $projectMembers = [];
+        foreach ($project->getMembers()->toArray() as $participation) {
+            $member = $participation->getMember();
+            $projectMembers[] = [
+                'id' => $member->getId(),
+                'name' => $member->getName(),
+            ];
+        }
+
+        $projectMembers[] = [
+            'id' => '2',
+            'name' => 'Je fait un test',
+        ];
+        $allUsers = [];
+        foreach ($em->getRepository(User::class)->findAll() as $user) {
+            $allUsers[] = [
+                'id' => $user->getId(),
+                'name' => $user->getName(),
+            ];
+        }
+        $allUsers[] = [
+            'id' => '2',
+            'name' => 'Je fait un test',
+        ];
 
         return $this->render('project/show.html.twig', [
             'project' => $project,
             'statuts' => $statuts,
             'tasks' => $taskArray,
             'taskForm' => $taskForm->createView(),
+            'projectMembers' => $projectMembers,
+            'allUsers' => $allUsers,
         ]);
     }
+
+    #[Route('/{id}/add-member/{userId}', name: '_project_add_member', methods: ['POST', 'GET'])]
+    public function addMember(Project $project, int $userId, UserRepository $userRepo, ParticipateRepository $repo, EntityManagerInterface $em)
+    {
+        $user = $userRepo->find($userId);
+        if (!$user) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'Utilisateur introuvable'
+            ], 404);
+        }
+        $existing = $repo->findOneBy([
+            'project' => $project,
+            'member' => $user
+        ]);
+
+        if ($existing) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'Membre déjà affecté à ce projet'
+            ], 400);
+        }
+
+        $participation = new Participate();
+        $participation->setProject($project)->setMember($user);
+        $project->addMember($participation);
+        $em->persist($participation);
+        $em->flush();
+
+        return new JsonResponse([
+            'status' => 'success',
+            'message' => 'Membre affecté au projet',
+            'id' => $user->getId(),
+            'name' => $user->getName(),
+        ]);
+    }
+
+    #[Route('/{id}/remove-member/{userId}', name: '_project_remove_member', methods: ['POST', 'GET'])]
+    public function removeMember(Project $project, int $userId, ParticipateRepository $repo, UserRepository $userRepo, EntityManagerInterface $em)
+    {
+
+        $user = $userRepo->find($userId);
+        if (!$user) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'Utilisateur introuvable'
+            ], 404);
+        }
+
+        $participation = $repo->findOneBy(['project' => $project, 'member' => $userId]);
+
+        if (!$participation) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'Affectation introuvable'
+            ], 404);
+        }
+
+        $project->removeMember($participation);
+        $em->remove($participation);
+        $em->flush();
+
+        return new JsonResponse([
+            'status' => 'success',
+            'message' => 'Membre désaffecté du projet',
+        ]);
+    }
+
 
     #[Route('/delete/{id}', name: '_delete', methods: ['DELETE'])]
     public function delete(Project $project, EntityManagerInterface $entityManager): JsonResponse

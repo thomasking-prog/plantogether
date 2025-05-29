@@ -29,17 +29,49 @@
 
 
     <div class="modal fade" id="taskManager" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true" data-id="">
-        <div class="modal-dialog">
-            <div class="modal-content">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content d-flex flex-column" style="height: 60vh;">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalLabel">Création d'une nouvelle tâche</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    {{ form_start(taskForm) }}
-                        {{ form_widget(taskForm) }}
-                    {{ form_end(taskForm) }}
+
+                <div class="modal-body flex-grow-1 overflow-hidden">
+                    <div class="d-flex h-100 gap-4">
+                        <!-- Colonne formulaire -->
+                        <div class="flex-fill overflow-auto">
+                            {{ form_start(taskForm) }}
+                            {{ form_widget(taskForm) }}
+                            {{ form_end(taskForm) }}
+                        </div>
+
+                        <!-- Colonne membres -->
+                        <div style="width: 250px;" class="d-flex flex-column position-relative">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">Membres</h6>
+
+                                <!-- Section bouton + et popup -->
+                                <div class="position-relative">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="addMemberBtn" title="Ajouter un membre">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
+
+                                    <!-- Liste des membres disponibles à ajouter -->
+                                    <div id="project-member-list"
+                                         class="row row-cols-2 g-2 position-absolute bg-white border rounded shadow p-2"
+                                         style="z-index: 1000; top: 40px; right: 0; width: 250px; max-height: 300px; overflow-y: auto;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Liste des membres affectés -->
+                            <ul id="assigned-members" class="list-group flex-grow-1 overflow-auto">
+                                <!-- Éléments <li> injectés dynamiquement -->
+                            </ul>
+                        </div>
+                    </div>
                 </div>
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
                     <button type="button" class="btn btn-primary" id="confirm" data-action="">Enregistrer</button>
@@ -47,6 +79,53 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="projectMemberModal" tabindex="-1" aria-labelledby="projectMemberLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content d-flex flex-column" style="height: 60vh;">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="projectMemberLabel">Gestion des membres du projet</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body flex-grow-1 overflow-hidden">
+                    <div class="d-flex h-100 gap-4">
+                        <!-- Colonne membres assignés -->
+                        <div class="flex-fill overflow-auto">
+                            <h6>Membres assignés</h6>
+                            <ul id="project-assigned-members" class="list-group">
+                                <!-- Membres injectés dynamiquement -->
+                            </ul>
+                        </div>
+
+                        <!-- Colonne ajout de membres -->
+                        <div style="width: 250px;" class="d-flex flex-column position-relative">
+                            <h6>Ajouter un membre</h6>
+                            <button type="button" class="btn btn-sm btn-outline-primary mb-2" id="addProjectMemberBtn">
+                                <i class="bi bi-plus-lg"></i> Ajouter
+                            </button>
+
+                            <div id="available-project-members"
+                                 class="row row-cols-2 g-2 bg-white border rounded shadow p-2 overflow-auto"
+                                 style="max-height: 300px;">
+                                <!-- Membres disponibles injectés dynamiquement -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
 
 {% endblock %}
 
@@ -102,7 +181,6 @@
             let alertMessage = $('#alert-message');
 
             function showAlert(status, message) {
-                console.log(status, message);
 
                 if (status === 'success') {
                     alertDiv.removeClass('alert-danger alert-warning alert-info');
@@ -117,9 +195,8 @@
 
                 setTimeout(() => {
                     alertDiv.fadeOut();
-                }, 5000);
+                }, 3000);
             }
-
 
             let status = localStorage.getItem('alertStatus');
             let message = localStorage.getItem('alertMessage');
@@ -131,7 +208,6 @@
                 localStorage.removeItem('alertMessage');
             }
 
-
             $("[id^='createTask-']").click(function() {
                 $('#modalLabel')[0].innerText = "Création d'une tâche";
 
@@ -142,9 +218,20 @@
                 form.reset();
             });
 
-            $('#confirm').click(function() {
+            confirmButton.click(function() {
                 let confirmAction = confirmButton.data('action'); // 'edit' ou 'create' par ex.
                 let formData = new FormData(form);
+
+                $('#assigned-members li').each(function () {
+                    const taskId = taskManager.data('id');
+                    const memberId = $(this).data('member-id');
+
+                    $.ajax({
+                        url: `/task/${taskId}/add-member/${memberId}`,
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    });
+                });
 
                 $.ajax({
                     url: `/task/${confirmAction}`,
@@ -156,7 +243,7 @@
                     .done(response => {
                         localStorage.setItem('alertStatus', response.status);
                         localStorage.setItem('alertMessage', response.message);
-                        //location.reload();
+                        location.reload();
                     })
                     .fail(error => {
                         showAlert(error.responseJSON.status, error.responseJSON.message);
@@ -168,35 +255,248 @@
             function fillTaskForm(data) {
                 for (const key in data) {
                     const field = document.querySelector(`[name="task[${key}]"]`);
-
-                    if (field) field.value = data[key];
+                    if (field) {
+                        field.value = data[key];
+                    }
                 }
             }
 
+            // Lorsqu'on clique sur une carte de tâche
             $('.task-card').click(function () {
+                const taskId = $(this).data('id');
+                const data = tasks[taskId];
 
-                let taskId = $(this).data('id')
-                let data = tasks[taskId];
+                if (!data) return;
 
-                taskManager.data("id", data.statut?.id);
+                const list = $('#project-member-list');
+                if (!list.hasClass('d-none')) {
+                    list.addClass('d-none');
+                }
 
+
+                // On stocke l'ID de la tâche dans le modal pour les futures actions (add/remove)
+                taskManager.attr('data-id', data.id);
+
+                // Remplissage du formulaire
                 const taskData = {
                     id: data.id || 0,
-                    label: data.label || "Nom Inconnue",
+                    label: data.label || "Nom inconnu",
                     estimatedTime: data.estimatedTime || "0",
                     formatTime: data.formatTime || "h",
                     priority: data.priority?.id || 0,
                     project: data.project?.id || 0,
                     statut: data.statut?.id || 0,
                 };
-
-                $('#modalLabel')[0].innerText = "Gestion d'une tâche";
                 fillTaskForm(taskData);
 
-                confirmButton.data('action', 'edit');
+                // Mise à jour du titre du modal
+                $('#modalLabel').text("Gestion d'une tâche");
+
+                // Remise à zéro de la liste des membres affectés
+                $('#assigned-members').empty();
+
+                // Ajout dynamique des membres affectés
+                if (data.assignedMembers && Array.isArray(data.assignedMembers)) {
+                    data.assignedMembers.forEach(member => {
+                        $('#assigned-members').append(`
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-member-id="${member.id}">
+                                <div class="d-flex align-items-center">
+                                    ${member.name}
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-member" title="Retirer">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </li>
+                        `);
+                    });
+                }
+
+                // Définir l’action du bouton (edit)
+                $('#confirm').data('action', 'edit');
+
+                // Afficher le modal
                 taskManager.modal('show');
             });
 
+            const projectMembers = {{ projectMembers|json_encode(constant('JSON_UNESCAPED_UNICODE'))|raw }};
+
+            $('#addMemberBtn').on('click', e => {
+                const list = $('#project-member-list');
+                list.toggleClass('d-none');
+                list.empty(); // vide la liste actuelle
+
+
+                // Pas besoin de vérifier list.children().length > 0 ici, vu qu’on fait un empty()
+
+                // Génère dynamiquement la liste des membres non assignés
+                projectMembers.forEach(member => {
+                    // Vérifie si le membre est déjà assigné
+                    const isAlreadyAssigned = $('#assigned-members').find(`[data-member-id="${member.id}"]`).length > 0;
+
+                    if (!isAlreadyAssigned) {
+                        list.append(`
+                            <div class="col">
+                                <div class="card member-card p-2 text-center" data-member-id="${member.id}" data-member-name="${member.name}" style="cursor:pointer;">
+                                    <div>${member.name}</div>
+                                </div>
+                            </div>
+                        `);
+                    }
+                });
+
+                const memberCount = list.children().length;
+                if (memberCount === 0 && !list.hasClass('d-none')) {
+                    list.addClass('d-none');
+                }
+
+                e.stopPropagation();
+            });
+
+            // Fermer le popup si on clique en dehors de la liste
+            $(document).on('click', function (e) {
+                const list = $('#project-member-list');
+                if (!$(e.target).closest('#project-member-list, #addMemberBtn').length && !$(e.target).closest('.member-card').length) {
+                    list.addClass('d-none');  // Fermer le popup
+                }
+            });
+
+
+            // Ajoute ceci en dehors de la boucle ou du callback
+            $(document).on('click', '.member-card', function () {
+                const memberId = $(this).data('member-id');
+                const memberName = $(this).data('member-name');
+
+                $('#assigned-members').append(`
+                    <li class="list-group-item d-flex justify-content-between align-items-center" data-member-id="${memberId}">
+                        <div class="d-flex align-items-center">
+                            ${memberName}
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-member" title="Retirer">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </li>
+                `);
+
+
+
+                $(this).parent().remove();
+
+                const list = $('#project-member-list');
+                const memberCount = list.children().length;
+                if (memberCount === 0) {
+                    list.toggleClass('d-none');
+                }
+            });
+
+            // Suppression d’un membre
+            $('#assigned-members').on('click', '.remove-member', function () {
+                const memberItem = $(this).closest('li');
+                const memberId = memberItem.data('member-id');
+                const taskId = taskManager.data('id');
+
+                $.ajax({
+                    url: '/task/' + taskId + '/remove-member/' + memberId,
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: response => {
+                        localStorage.setItem('alertStatus', response.status);
+                        localStorage.setItem('alertMessage', response.message);
+                        location.reload();
+                    },
+                    error: error => {
+                        showAlert(error.responseJSON.status, error.responseJSON.message);
+                        taskManager.modal('hide');
+                    }
+                });
+            });
+
+            const allUsers = {{ allUsers|json_encode(constant('JSON_UNESCAPED_UNICODE'))|raw }};
+            const projectId = {{ project.id }};
+
+            function refreshProjectMembers() {
+                const assignedList = $('#project-assigned-members');
+                const availableList = $('#available-project-members');
+                assignedList.empty();
+                availableList.empty();
+
+                allUsers.forEach(user => {
+                    const isAssigned = projectMembers.some(pu => pu.id === user.id);
+
+                    if (isAssigned) {
+                        assignedList.append(`
+                <li class="list-group-item d-flex justify-content-between align-items-center" data-member-id="${user.id}">
+                    ${user.name}
+                    <button class="btn btn-sm btn-outline-danger remove-project-member">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </li>
+            `);
+                    } else {
+                        availableList.append(`
+                <div class="col">
+                    <div class="card p-2 text-center project-member-card" data-member-id="${user.id}" style="cursor:pointer;">
+                        ${user.name}
+                    </div>
+                </div>
+            `);
+                    }
+                });
+            }
+
+            const projectMemberModal = $('#projectMemberModal');
+
+            // Ajout de membre
+            $(document).on('click', '.project-member-card', function () {
+                const memberId = $(this).data('member-id');
+
+                $.ajax({
+                    url: '/project/' + projectId + '/add-member/' + memberId,
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: response => {
+                        localStorage.setItem('alertStatus', response.status);
+                        localStorage.setItem('alertMessage', response.message);
+                        location.reload();
+                    },
+                    error: error => {
+                        showAlert(error.responseJSON.status, error.responseJSON.message);
+                        projectMemberModal.modal('hide');
+                    }
+                });
+            });
+
+            // Ajout de membre
+            $(document).on('click', '.remove-project-member', function () {
+                const memberId = $(this).closest('li').data('member-id');
+
+                $.ajax({
+                    url: '/project/' + projectId + '/remove-member/' + memberId,
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: response => {
+                        localStorage.setItem('alertStatus', response.status);
+                        localStorage.setItem('alertMessage', response.message);
+                        location.reload();
+                    },
+                    error: error => {
+                        showAlert(error.responseJSON.status, error.responseJSON.message);
+                        projectMemberModal.modal('hide');
+                    }
+                });
+            });
+
+            // Suppression de membre
+            $(document).on('click', '.remove-project-member', function () {
+                const memberId = $(this).closest('li').data('member-id');
+                $.post(`/project/${projectId}/remove-member/${memberId}`, function (response) {
+                    location.reload();
+                });
+            });
+
+            $('#projectMembers').on('click', function () {
+                refreshProjectMembers();
+                $('#projectMemberModal').modal('show');
+            });
         })
     </script>
 

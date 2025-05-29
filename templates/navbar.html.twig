@@ -1,5 +1,17 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <a class="navbar-brand" href="#">
+    <a class="navbar-brand" href="/">
         Home
     </a>
+
+    <div class="ms-auto">
+        {% if app.request.attributes.get('_route') == 'home' %}
+            <span class="navbar-text">Vous êtes sur la page d'accueil</span>
+        {% elseif app.request.attributes.get('_route') == 'project_show' %}
+            <button class="btn btn-outline-secondary navbar-text" id="projectMembers" title="Gérer les membres">
+                <i class="bi bi-people"></i>
+            </button>
+        {% else %}
+            <span class="navbar-text">Autre page</span>
+        {% endif %}
+    </div>
 </nav>

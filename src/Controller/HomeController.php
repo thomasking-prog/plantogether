@@ -5,8 +5,11 @@ namespace App\Controller;
 use App\Entity\Project;
 use App\Entity\Statut;
 use App\Entity\User;
+use App\Repository\ParticipateRepository;
+use App\Repository\ProjectRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -17,7 +20,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class HomeController extends AbstractController
 {
     #[Route('/', name: 'home')]
-    public function index(EntityManagerInterface $em): Response
+    public function index(EntityManagerInterface $em, Security $security, ParticipateRepository $participateRepo, ProjectRepository $projectRepo): Response
     {
 
         $projet = new Project();
@@ -25,8 +28,12 @@ final class HomeController extends AbstractController
         $statut->setLabel('Non définis');
         $projet->setCreator($this->getUser())->setLabel('Test')->setStatut($statut);
 
-        $projectRepository = $em->getRepository(Project::class);
-        $projects = $projectRepository->findAll();
+        $user = $security->getUser();
+
+        $participations = $participateRepo->findBy(['member' => $user]);
+
+        // Puis les projets correspondants
+        $projects = array_map(fn($project) => $project->getProject(), $participations);
 
         //$em->persist($statut);
         //$em->persist($projet);

@@ -2,10 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\Affect;
 use App\Entity\Priority;
 use App\Entity\Project;
 use App\Entity\Statut;
 use App\Entity\Task;
+use App\Entity\User;
 use App\Form\TaskType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -75,6 +77,78 @@ final class TaskController extends AbstractController
         return new JsonResponse([
             'status' => 'error',
             'message' => (string) $form->getErrors(true, false)
+        ]);
+    }
+
+    #[Route('/{id}/add-member/{memberId}', name: 'task_add_member', methods: ['POST'])]
+    public function addMember(Task $task, int $memberId, EntityManagerInterface $em): JsonResponse
+    {
+        $member = $em->getRepository(User::class)->find($memberId);
+        if (!$member) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'Utilisateur introuvable'
+            ], 404);
+        }
+
+        $existing = $em->getRepository(Affect::class)->findOneBy([
+            'task' => $task,
+            'member' => $member,
+        ]);
+
+        if ($existing) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'Membre déjà affecté à cette tâche'
+            ], 400);
+        }
+
+        $assignment = new Affect();
+        $assignment->setTask($task);
+        $assignment->setMember($member);
+        $task->addMember($assignment);
+        $em->persist($assignment);
+        $em->flush();
+
+        return new JsonResponse([
+            'status' => 'success',
+            'message' => 'Membre affecté à la tâche',
+            'id' => $member->getId(),
+            'name' => $member->getName(),
+        ]);
+    }
+
+    #[Route('/{id}/remove-member/{memberId}', name: 'task_remove_member', methods: ['POST'])]
+    public function removeMember(Task $task, int $memberId, EntityManagerInterface $em): JsonResponse
+    {
+        $member = $em->getRepository(User::class)->find($memberId);
+
+        if (!$member) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'Utilisateur introuvable'
+            ], 404);
+        }
+
+        $assignment = $em->getRepository(Affect::class)->findOneBy([
+            'task' => $task,
+            'member' => $member
+        ]);
+
+        if (!$assignment) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => 'Affectation introuvable'
+            ], 404);
+        }
+
+        $task->removeMember($assignment);
+        $em->remove($assignment);
+        $em->flush();
+
+        return new JsonResponse([
+            'status' => 'success',
+            'message' => 'Membre désaffecté de la tâche'
         ]);
     }
 }

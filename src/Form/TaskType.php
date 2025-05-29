@@ -67,12 +67,7 @@ class TaskType extends AbstractType
             ->add('statut', EntityType::class, [
                 'class' => Statut::class,
                 'choice_label' => 'label',
-                'attr' => [
-                    'style' => 'display:none',
-                ],
-                'label_attr' => [
-                    'style' => 'display:none',
-                ]
+
             ])
         ;
     }
