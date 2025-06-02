@@ -10,8 +10,11 @@ use App\Repository\ProjectRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -29,6 +32,7 @@ final class HomeController extends AbstractController
         $projet->setCreator($this->getUser())->setLabel('Test')->setStatut($statut);
 
         $user = $security->getUser();
+        //dd($_ENV['MAILER_DSN'] ?? getenv('MAILER_DSN'));
 
         $participations = $participateRepo->findBy(['member' => $user]);
 
@@ -45,4 +49,19 @@ final class HomeController extends AbstractController
             'projects' => $projects,
         ]);
     }
+
+    #[Route('/test-mail', name: 'test_mail')]
+    public function testMail(MailerInterface $mailer)
+    {
+        $email = (new Email())
+            ->from('test@yourapp.com')
+            ->to('test@example.com') // tu peux mettre n’importe quoi ici
+            ->subject('Test Mail')
+            ->text('Ceci est un test.');
+
+        $mailer->send($email);
+
+        return new JsonResponse(['status' => 'ok']);
+    }
+
 }

@@ -20,7 +20,7 @@
             <!-- Les nouvelles cards seront ajoutées ici -->
 
             <!-- Les projets existant seront affichés ici -->
-            {% if projects is defined and projects is not empty %}
+            {% if projects is defined %}
                 {% for project in projects %}
                     <div class="card text-center border-primary shadow-sm" data-id="{{ project.id }}">
                         <div class="card-body d-flex flex-column justify-content-center">
@@ -96,6 +96,10 @@
         .card a {
             max-width: 10rem;
         }
+
+        #add-project-btn {
+            cursor: pointer;
+        }
     </style>
 {% endblock %}
 
@@ -132,6 +136,8 @@
                 const projectId = $(this).data('id');
                 const input = $(`#project-label-${projectId}`);
                 const label = input.val().trim();
+
+                console.log(projectId, input, label);
 
                 if (label === '') {
                     alert('Veuillez entrer un nom pour le projet.');

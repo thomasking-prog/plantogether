@@ -23,14 +23,17 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/project', name: 'project')]
 final class ProjectController extends AbstractController
 {
-
-    #[Route('/', name: '_index')]
-    public function index(): Response
+    private function denyIfNotProjectMember(Project $project): void
     {
-        return $this->render('project/index.html.twig', [
-            'controller_name' => 'ProjectController',
-        ]);
+        $user = $this->getUser();
+
+        $isParticipant = $project->getMembers()->exists(fn($key, $p) => $p->getMember() === $user);
+
+        if (!$isParticipant && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException("Vous n'avez pas accès à ce projet.");
+        }
     }
+
 
     #[Route('/create', name: '_create', methods: ['POST'])]
     public function create(Request $request, EntityManagerInterface $em): JsonResponse
@@ -49,7 +52,12 @@ final class ProjectController extends AbstractController
             ->setCreator($this->getUser())
             ->setStatut($statut);
 
+        $paritipation  = new Participate();
+        $paritipation->setProject($project)
+            ->setMember($this->getUser());
+
         $em->persist($project);
+        $em->persist($paritipation);
         $em->flush();
 
 
@@ -62,6 +70,8 @@ final class ProjectController extends AbstractController
     #[Route('/{id}', name: '_show')]
     public function show(Project $project, EntityManagerInterface $em): Response
     {
+        $this->denyIfNotProjectMember($project);
+
         $statuts = $em->getRepository(Statut::class)->findAll();
 
         $taskArray = [];
@@ -78,8 +88,8 @@ final class ProjectController extends AbstractController
                     'label' => $task->getPriority()?->getLabel(),
                 ],
                 'project' => [
-                    'id' => $task->getProject()?->getId(),
-                    'label' => $task->getProject()?->getLabel(),
+                    'id' => $project->getId(),
+                    'label' => $project->getLabel(),
                 ],
                 'estimatedTime' => $task->getEstimatedTime(),
                 'formatTime' => $task->getFormatTime(),
@@ -130,7 +140,10 @@ final class ProjectController extends AbstractController
     #[Route('/{id}/add-member/{userId}', name: '_project_add_member', methods: ['POST', 'GET'])]
     public function addMember(Project $project, int $userId, UserRepository $userRepo, ParticipateRepository $repo, EntityManagerInterface $em)
     {
+        $this->denyIfNotProjectMember($project);
+
         $user = $userRepo->find($userId);
+
         if (!$user) {
             return new JsonResponse([
                 'status' => 'error',
@@ -166,6 +179,7 @@ final class ProjectController extends AbstractController
     #[Route('/{id}/remove-member/{userId}', name: '_project_remove_member', methods: ['POST', 'GET'])]
     public function removeMember(Project $project, int $userId, ParticipateRepository $repo, UserRepository $userRepo, EntityManagerInterface $em)
     {
+        $this->denyIfNotProjectMember($project);
 
         $user = $userRepo->find($userId);
         if (!$user) {
@@ -198,6 +212,8 @@ final class ProjectController extends AbstractController
     #[Route('/delete/{id}', name: '_delete', methods: ['DELETE'])]
     public function delete(Project $project, EntityManagerInterface $entityManager): JsonResponse
     {
+        $this->denyIfNotProjectMember($project);
+
         $entityManager->remove($project);
         $entityManager->flush();
 

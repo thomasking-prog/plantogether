@@ -62,9 +62,16 @@ class Task
     #[Assert\NotBlank(message: "Le nom de la tâche est obligatoire.")]
     private ?string $label = null;
 
+    /**
+     * @var Collection<int, Log>
+     */
+    #[ORM\OneToMany(targetEntity: Log::class, mappedBy: 'task')]
+    private Collection $logs;
+
     public function __construct()
     {
         $this->members = new ArrayCollection();
+        $this->logs = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -194,6 +201,36 @@ class Task
     public function setLabel(string $label): static
     {
         $this->label = $label;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Log>
+     */
+    public function getLogs(): Collection
+    {
+        return $this->logs;
+    }
+
+    public function addLog(Log $log): static
+    {
+        if (!$this->logs->contains($log)) {
+            $this->logs->add($log);
+            $log->setTask($this);
+        }
+
+        return $this;
+    }
+
+    public function removeLog(Log $log): static
+    {
+        if ($this->logs->removeElement($log)) {
+            // set the owning side to null (unless already changed)
+            if ($log->getTask() === $this) {
+                $log->setTask(null);
+            }
+        }
 
         return $this;
     }

@@ -74,7 +74,7 @@
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-                    <button type="button" class="btn btn-primary" id="confirm" data-action="">Enregistrer</button>
+                    <button type="button" class="btn btn-primary" id="confirm" data-action="edit">Enregistrer</button>
                 </div>
             </div>
         </div>
@@ -120,13 +120,6 @@
             </div>
         </div>
     </div>
-
-
-
-
-
-
-
 {% endblock %}
 
 {% block stylesheets %}
@@ -180,6 +173,8 @@
             let alertDiv = $('#alert');
             let alertMessage = $('#alert-message');
 
+            const projectId = {{ project.id }};
+
             function showAlert(status, message) {
 
                 if (status === 'success') {
@@ -220,6 +215,8 @@
 
             confirmButton.click(function() {
                 let confirmAction = confirmButton.data('action'); // 'edit' ou 'create' par ex.
+                console.log(form);
+                $('#task_project').val(projectId);
                 let formData = new FormData(form);
 
                 $('#assigned-members li').each(function () {
@@ -246,8 +243,9 @@
                         location.reload();
                     })
                     .fail(error => {
-                        showAlert(error.responseJSON.status, error.responseJSON.message);
-                        taskManager.modal('hide');
+                        console.log(error.responseText);
+                        //showAlert(error.responseJSON.status, error.responseJSON.message);
+                        //taskManager.modal('hide');
                     });
             });
 
@@ -312,7 +310,7 @@
                 }
 
                 // Définir l’action du bouton (edit)
-                $('#confirm').data('action', 'edit');
+                confirmButton.data('action', 'edit');
 
                 // Afficher le modal
                 taskManager.modal('show');
@@ -411,7 +409,7 @@
             });
 
             const allUsers = {{ allUsers|json_encode(constant('JSON_UNESCAPED_UNICODE'))|raw }};
-            const projectId = {{ project.id }};
+
 
             function refreshProjectMembers() {
                 const assignedList = $('#project-assigned-members');

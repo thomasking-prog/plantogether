@@ -65,11 +65,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Affect::class, mappedBy: 'member')]
     private Collection $affectations;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $email = null;
+
+    /**
+     * @var Collection<int, Log>
+     */
+    #[ORM\OneToMany(targetEntity: Log::class, mappedBy: 'member')]
+    private Collection $logs;
+
     public function __construct()
     {
         $this->projects = new ArrayCollection();
         $this->participations = new ArrayCollection();
         $this->affectations = new ArrayCollection();
+        $this->logs = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -255,6 +265,48 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($affectation->getMember() === $this) {
                 $affectation->setMember(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
+
+    public function setEmail(?string $email): static
+    {
+        $this->email = $email;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Log>
+     */
+    public function getLogs(): Collection
+    {
+        return $this->logs;
+    }
+
+    public function addLog(Log $log): static
+    {
+        if (!$this->logs->contains($log)) {
+            $this->logs->add($log);
+            $log->setMember($this);
+        }
+
+        return $this;
+    }
+
+    public function removeLog(Log $log): static
+    {
+        if ($this->logs->removeElement($log)) {
+            // set the owning side to null (unless already changed)
+            if ($log->getMember() === $this) {
+                $log->setMember(null);
             }
         }
 

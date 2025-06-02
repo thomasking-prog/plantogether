@@ -16,6 +16,34 @@ class TaskRepository extends ServiceEntityRepository
         parent::__construct($registry, Task::class);
     }
 
+    public function findByFiltres(?string $statut, ?int $projetId, ?int $userId, ?string $terme): array
+    {
+        $qb = $this->createQueryBuilder('t');
+
+        if ($statut) {
+            $qb->andWhere('t.statut = :statut')
+                ->setParameter('statut', $statut);
+        }
+
+        if ($projetId) {
+            $qb->andWhere('t.projet = :projet')
+                ->setParameter('projet', $projetId);
+        }
+
+        if ($userId) {
+            $qb->andWhere('t.assigneA = :user')
+                ->setParameter('user', $userId);
+        }
+
+        if ($terme) {
+            $qb->andWhere('t.titre LIKE :terme OR t.description LIKE :terme')
+                ->setParameter('terme', '%' . $terme . '%');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+
     //    /**
     //     * @return Task[] Returns an array of Task objects
     //     */
