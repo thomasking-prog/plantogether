@@ -1,0 +1,423 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+
+    <div class="container mt-5">
+        <h2 class="mb-4">Suivi des tâches et statistiques</h2>
+
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks"
+                        type="button" role="tab" aria-controls="tasks" aria-selected="true">
+                    Tâches par utilisateur
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats"
+                        type="button" role="tab" aria-controls="stats" aria-selected="false">
+                    Statistiques par projet
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="filter-tab" data-bs-toggle="tab" data-bs-target="#filter"
+                        type="button" role="tab" aria-controls="filter" aria-selected="false">
+                    Recherche avancée
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="filter-tab" data-bs-toggle="tab" data-bs-target="#statuts"
+                        type="button" role="tab" aria-controls="statut" aria-selected="false">
+                    Statuts par projet
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab panes -->
+        <div class="tab-content mt-4" id="mainTabsContent">
+            <!-- Onglet Tâches -->
+            <div class="tab-pane fade show active" id="tasks" role="tabpanel" aria-labelledby="tasks-tab">
+                <div class="mb-3">
+                    <label for="userSelect" class="form-label">Choisissez un utilisateur :</label>
+                    <select class="form-select" id="userSelect">
+                        <option value="">-- Sélectionnez un utilisateur --</option>
+                        {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover mt-4" id="tasksTable">
+                        <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Label</th>
+                            <th>
+                                <select class="form-select form-select-sm fw-bold" id="statutSelect">
+                                    <option value="0">Statut</option>
+                                    {% for statut in statuts %}
+                                        <option value="{{ statut.label }}">{{ statut.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <!-- Contenu chargé dynamiquement -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Onglet Statistiques -->
+            <div class="tab-pane fade" id="stats" role="tabpanel" aria-labelledby="stats-tab">
+                <h4 class="mb-3">Statistiques par projet</h4>
+
+                <select id="project-select" class="form-select mb-4">
+                    <option value="">-- Sélectionnez un projet --</option>
+                    {% for project in projects %}
+                        <option value="{{ project.id }}">{{ project.label }}</option>
+                    {% endfor %}
+                </select>
+
+                <canvas id="statusChart" height="100"></canvas>
+            </div>
+
+            <div class="tab-pane fade" id="filter" role="tabpanel" aria-labelledby="filter-tab">
+                <h4 class="mb-3">Recherche et filtrage avancé des tâches</h4>
+
+                <form id="advancedSearchForm" class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label for="filterUser" class="form-label">Utilisateur</label>
+                        <select class="form-select" id="filterUser" name="user">
+                            <option value="">-- Tous les utilisateurs --</option>
+                            {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="filterStatut" class="form-label">Statut</label>
+                        <select class="form-select" id="filterStatut" name="statut">
+                            <option value="">-- Tous les statuts --</option>
+                            {% for statut in statuts %}
+                                <option value="{{ statut.label }}">{{ statut.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="filterProject" class="form-label">Projet</label>
+                        <select class="form-select" id="filterProject" name="project">
+                            <option value="">-- Tous les projets --</option>
+                            {% for project in projects %}
+                                <option value="{{ project.id }}">{{ project.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Rechercher</button>
+                        <button type="reset" class="btn btn-secondary ms-2" id="resetFilter">Réinitialiser</button>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="filterTasksTable">
+                        <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Label</th>
+                            <th>Statut</th>
+                            <th>Projet</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <!-- Résultats dynamiques -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="statuts" role="tabpanel" aria-labelledby="filter-tab">
+                <div class="container mb-3">
+                    <h3 class="mb-4">Gestion des statuts</h3>
+
+                    <!-- Formulaire d'ajout -->
+                    <form id="addStatutForm" class="d-flex gap-2 mb-4">
+                        <input type="text" class="form-control" id="newStatutLabel" placeholder="Nouveau statut" required>
+                        <button type="submit" class="btn btn-success">Ajouter</button>
+                    </form>
+
+                    <!-- Tableau des statuts -->
+                    <table class="table table-bordered" id="statutTable">
+                        <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Label</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for statut in statuts %}
+                            <tr data-id="{{ statut.id }}">
+                                <td>{{ statut.id }}</td>
+                                <td class="statut-label">{{ statut.label }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary edit-btn">Modifier</button>
+                                    <button class="btn btn-sm btn-danger delete-btn">Supprimer</button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const taskPerUser = {{ taskPerUser|json_encode|raw }};
+        const userSelect = document.getElementById('userSelect');
+        const statutSelect = document.getElementById('statutSelect');
+        const tasksTableBody = document.querySelector('#tasksTable tbody');
+
+        let selectedUser = null;
+        let selectedStatut = '0';
+
+        userSelect.addEventListener('change', () => {
+            selectedUser = userSelect.value;
+            renderTable();
+        });
+
+        statutSelect.addEventListener('change', () => {
+            selectedStatut = statutSelect.value;
+            renderTable();
+        });
+
+        function renderTable() {
+            tasksTableBody.innerHTML = '';
+
+            if (!selectedUser || !taskPerUser[selectedUser]) return;
+
+            const projects = Object.keys(taskPerUser[selectedUser]).sort((a, b) => a - b);
+
+            projects.forEach(projectId => {
+                const projectTasks = taskPerUser[selectedUser][projectId];
+                const filteredTasks = projectTasks.filter(task => selectedStatut === '0' || task.statut === selectedStatut);
+
+                if (filteredTasks.length > 0) {
+                    const projectName = filteredTasks[0].project || "Projet inconnu";
+
+                    const headerRow = document.createElement('tr');
+                    headerRow.innerHTML = `<td colspan="3" class="table-secondary fw-bold">Projet ${projectName}</td>`;
+                    tasksTableBody.appendChild(headerRow);
+
+                    filteredTasks.forEach(task => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                        <td>${task.id}</td>
+                        <td>${task.label}</td>
+                        <td>${task.statut}</td>
+                    `;
+                        tasksTableBody.appendChild(row);
+                    });
+                }
+            });
+        }
+
+        // --- Partie Statistiques par projet ---
+
+        let chartInstance = null;
+
+        document.getElementById('project-select').addEventListener('change', function () {
+            const projectId = this.value;
+
+            if (!projectId) return;
+
+            fetch(`/admin/stats/project/${projectId}/task-status`)
+                .then(response => response.json())
+                .then(data => {
+                    const labels = Object.keys(data.stats);
+                    const values = Object.values(data.stats);
+
+                    const ctx = document.getElementById('statusChart').getContext('2d');
+
+                    if (chartInstance) {
+                        chartInstance.destroy(); // Nettoyer ancien graphique
+                    }
+
+                    chartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Nombre de tâches par statut',
+                                data: values,
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.5)',
+                                    'rgba(54, 162, 235, 0.5)',
+                                    'rgba(75, 192, 192, 0.5)',
+                                    'rgba(255, 206, 86, 0.5)',
+                                    'rgba(153, 102, 255, 0.5)'
+                                ],
+                                borderColor: 'rgba(0, 0, 0, 0.1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: `Total des tâches : ${data.total}`
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: data.total,
+                                    ticks: { stepSize: 1 }
+                                }
+                            }
+                        }
+                    });
+                });
+        });
+    </script>
+
+    <script>
+        const filterForm = document.getElementById('advancedSearchForm');
+        const filterTableBody = document.querySelector('#filterTasksTable tbody');
+
+        // allTasks est déjà injecté et structuré correctement
+        const allTasks = {{ allTasks|json_encode|raw }};
+
+        function renderFilteredTasks(tasks) {
+            filterTableBody.innerHTML = '';
+
+            if (tasks.length === 0) {
+                filterTableBody.innerHTML = '<tr><td colspan="5" class="text-center">Aucune tâche trouvée.</td></tr>';
+                return;
+            }
+
+            tasks.forEach(task => {
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${task.id}</td>
+                    <td>${task.label}</td>
+                    <td>${task.statut}</td>
+                    <td>${task.projectName}</td>
+                `;
+                filterTableBody.appendChild(row);
+            });
+        }
+
+
+        filterForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const userFilter = filterForm.user.value;
+            const statutFilter = filterForm.statut.value;
+            const projectFilter = filterForm.project.value;
+
+            let filtered = allTasks;
+
+            if (userFilter) {
+                const userId = parseInt(userFilter);
+                filtered = filtered.filter(task => task.users.includes(userId));
+            }
+
+            if (statutFilter) {
+                filtered = filtered.filter(t => t.statut === statutFilter);
+            }
+            if (projectFilter) {
+                filtered = filtered.filter(t => t.projectId === parseInt(projectFilter));
+            }
+
+            renderFilteredTasks(filtered);
+        });
+
+        // Réinitialiser le tableau
+        document.getElementById('resetFilter').addEventListener('click', () => {
+            filterForm.reset(); // Remet le formulaire à zéro
+            filterTableBody.innerHTML = '';
+        });
+    </script>
+
+
+    <script>
+        document.getElementById('addStatutForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const label = document.getElementById('newStatutLabel').value;
+
+            fetch('/admin/statuts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ label })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const row = document.createElement('tr');
+                        row.dataset.id = data.id;
+                        row.innerHTML = `
+                <td>${data.id}</td>
+                <td class="statut-label">${data.label}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary edit-btn">Modifier</button>
+                    <button class="btn btn-sm btn-danger delete-btn">Supprimer</button>
+                </td>
+            `;
+                        document.querySelector('#statutTable tbody').appendChild(row);
+                        document.getElementById('newStatutLabel').value = '';
+                    }
+                });
+        });
+
+        // Modifier ou supprimer
+        document.getElementById('statutTable').addEventListener('click', function(e) {
+            const row = e.target.closest('tr');
+            const id = row.dataset.id;
+
+            // Modifier
+            if (e.target.classList.contains('edit-btn')) {
+                const labelTd = row.querySelector('.statut-label');
+                const currentLabel = labelTd.textContent;
+                const newLabel = prompt('Nouveau label :', currentLabel);
+                if (newLabel && newLabel !== currentLabel) {
+                    fetch(`/admin/statuts/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ label: newLabel })
+                    }).then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                labelTd.textContent = newLabel;
+                            }
+                        });
+                }
+            }
+
+            // Supprimer
+            if (e.target.classList.contains('delete-btn')) {
+                if (confirm('Supprimer ce statut ?')) {
+                    fetch(`/admin/statuts/${id}`, {
+                        method: 'DELETE'
+                    }).then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                row.remove();
+                            }
+                        });
+                }
+            }
+        });
+    </script>
+
+{% endblock %}

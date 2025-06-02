@@ -1,0 +1,41 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <h1>Recherche de tâches</h1>
+
+    <form method="get">
+        <input type="text" name="terme" placeholder="Mot-clé..." value="{{ app.request.get('terme') }}">
+
+        <select name="statut">
+            <option value="">Tous les statuts</option>
+            <option value="à faire">À faire</option>
+            <option value="en cours">En cours</option>
+            <option value="terminée">Terminée</option>
+        </select>
+
+        <select name="projet">
+            <option value="">Tous les projets</option>
+            {% for projet in projets %}
+                <option value="{{ projet.id }}" {% if app.request.get('projet') == projet.id %}selected{% endif %}>{{ projet.nom }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="utilisateur">
+            <option value="">Tous les utilisateurs</option>
+            {% for user in utilisateurs %}
+                <option value="{{ user.id }}" {% if app.request.get('utilisateur') == user.id %}selected{% endif %}>{{ user.nom }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit">Rechercher</button>
+    </form>
+
+    <h2>Résultats</h2>
+    <ul>
+        {% for tache in resultats %}
+            <li>{{ tache.titre }} - {{ tache.statut }} - Projet : {{ tache.projet.nom }}</li>
+        {% else %}
+            <li>Aucune tâche trouvée.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}
