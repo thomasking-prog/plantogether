@@ -110,11 +110,6 @@ final class ProjectController extends AbstractController
                 'name' => $member->getName(),
             ];
         }
-
-        $projectMembers[] = [
-            'id' => '2',
-            'name' => 'Je fait un test',
-        ];
         $allUsers = [];
         foreach ($em->getRepository(User::class)->findAll() as $user) {
             $allUsers[] = [
@@ -122,11 +117,6 @@ final class ProjectController extends AbstractController
                 'name' => $user->getName(),
             ];
         }
-        $allUsers[] = [
-            'id' => '2',
-            'name' => 'Je fait un test',
-        ];
-
         return $this->render('project/show.html.twig', [
             'project' => $project,
             'statuts' => $statuts,
