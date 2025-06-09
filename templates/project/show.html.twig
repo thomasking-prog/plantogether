@@ -8,14 +8,15 @@
         <div class="d-flex gap-3 overflow-hidden overflow-md-auto scroll-mobile align-items-start">
             {% for statut in statuts %}
                 <div class="d-flex flex-column border border-secondary shadow-sm p-3 gap-3 justify-content-between statut-col">
-                    {{ statut.label }}
+                    <span style="color: {{ statut.color }}";>{{ statut.label }}</span>
                     <button id="createTask-{{ statut.id }}" class="btn btn-secondary" data-id="{{ statut.id }}">
                         <i class="bi bi-plus-lg"></i>
                         Ajouter une tâche
                     </button>
                     {% for task in tasks %}
                         {% if task.statut.id == statut.id %}
-                            <div class="card w-100 task-card" data-id="{{ task.id }}">
+                            <div class="card w-100 task-card" data-id="{{ task.id }}"
+                                 style="border-left: 5px solid {{ task.priority.color }};">
                                 <div class="card-body">
                                     <p class="card-text">{{ task.label }}</p>
                                 </div>
@@ -26,6 +27,7 @@
             {% endfor %}
         </div>
     </div>
+
 
 
     <div class="modal fade" id="taskManager" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true" data-id="">

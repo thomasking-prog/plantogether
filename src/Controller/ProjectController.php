@@ -86,6 +86,7 @@ final class ProjectController extends AbstractController
                 'priority' => [
                     'id' => $task->getPriority()?->getId(),
                     'label' => $task->getPriority()?->getLabel(),
+                    'color' =>  $task->getPriority()?->getColor(),
                 ],
                 'project' => [
                     'id' => $project->getId(),

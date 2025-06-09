@@ -23,10 +23,10 @@ class AppFixtures extends Fixture
     {
         // --- Users ---
         $usersData = [
-            ['username' => 'alice', 'firstName' => 'Alice', 'name' => 'Smith', 'email' => 'alice@example.com'],
-            ['username' => 'bob', 'firstName' => 'Bob', 'name' => 'Johnson', 'email' => 'bob@example.com'],
-            ['username' => 'carol', 'firstName' => 'Carol', 'name' => 'Williams', 'email' => 'carol@example.com'],
-            ['username' => 'dave', 'firstName' => 'Dave', 'name' => 'Brown', 'email' => 'dave@example.com'],
+            ['username' => 'alice', 'firstName' => 'Alice', 'name' => 'Smith', 'email' => 'alice@example.com', 'roles' => "ROLE_ADMIN"],
+            ['username' => 'bob', 'firstName' => 'Bob', 'name' => 'Johnson', 'email' => 'bob@example.com', 'roles' => "ROLE_USER"],
+            ['username' => 'carol', 'firstName' => 'Carol', 'name' => 'Williams', 'email' => 'carol@example.com', 'roles' => "ROLE_USER"],
+            ['username' => 'dave', 'firstName' => 'Dave', 'name' => 'Brown', 'email' => 'dave@example.com', 'roles' => "ROLE_USER"],
         ];
         $users = [];
         foreach ($usersData as $data) {
@@ -35,7 +35,7 @@ class AppFixtures extends Fixture
                 ->setFirstname($data['firstName'])
                 ->setName($data['name'])
                 ->setEmail($data['email'])
-                ->setRoles(['ROLE_USER']);
+                ->setRoles([$data['roles']]);
             // Tous avec mot de passe 'password'
             $user->setPassword($this->hasher->hashPassword($user, 'password'));
             $manager->persist($user);
@@ -44,23 +44,37 @@ class AppFixtures extends Fixture
 
         // --- Statuts ---
         $statutsLabels = ['Open', 'In Progress', 'Done'];
+        $statutsColors = [
+            'Open' => '#FF0000',        // rouge
+            'In Progress' => '#FFA500', // orange
+            'Done' => '#008000',        // vert
+        ];
         $statuts = [];
         foreach ($statutsLabels as $label) {
             $s = new Statut();
-            $s->setLabel($label);
+            $s->setLabel($label)
+                ->setColor($statutsColors[$label]);
             $manager->persist($s);
             $statuts[$label] = $s;
         }
 
+
         // --- Priorities ---
         $priorityLabels = ['Low', 'Medium', 'High'];
+        $priorityColors = [
+            'Low' => '#00FF00',     // vert clair
+            'Medium' => '#FFFF00',  // jaune
+            'High' => '#FF0000',    // rouge
+        ];
         $priorities = [];
         foreach ($priorityLabels as $label) {
             $p = new Priority();
-            $p->setLabel($label);
+            $p->setLabel($label)
+                ->setColor($priorityColors[$label]);
             $manager->persist($p);
             $priorities[$label] = $p;
         }
+
 
         // --- Projects ---
         $projectsData = [

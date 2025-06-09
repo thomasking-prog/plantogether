@@ -26,6 +26,10 @@ class Priority
     #[ORM\OneToMany(targetEntity: Task::class, mappedBy: 'priority')]
     private Collection $tasks;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['task:read'])]
+    private ?string $color = null;
+
     public function __construct()
     {
         $this->tasks = new ArrayCollection();
@@ -74,6 +78,18 @@ class Priority
                 $task->setPriority(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getColor(): ?string
+    {
+        return $this->color;
+    }
+
+    public function setColor(?string $color): static
+    {
+        $this->color = $color;
 
         return $this;
     }
