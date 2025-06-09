@@ -28,14 +28,15 @@ final class ProjectController extends AbstractController
         $user = $this->getUser();
 
         $isParticipant = $project->getMembers()->exists(fn($key, $p) => $p->getMember() === $user);
+        $isCreator = $project->getCreator() === $user;
 
-        if (!$isParticipant && !$this->isGranted('ROLE_ADMIN')) {
+        if ((!$isParticipant && !$this->isGranted('ROLE_ADMIN')) || !$isCreator ) {
             throw $this->createAccessDeniedException("Vous n'avez pas accès à ce projet.");
         }
     }
 
 
-    #[Route('/create', name: '_create', methods: ['POST'])]
+    #[Route('/create', name: '_create', methods: ['POST', 'GET'])]
     public function create(Request $request, EntityManagerInterface $em): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -46,7 +47,7 @@ final class ProjectController extends AbstractController
 
         // Logique pour créer un projet (ex. enregistrer dans la base de données)
         $project = new Project();
-        $statut = $em->getRepository(Statut::class)->findOneBy(['label' => 'Non définis']);
+        $statut = $em->getRepository(Statut::class)->findOneBy(['label' => 'Open']);
 
         $project->setLabel($data['label'])
             ->setCreator($this->getUser())

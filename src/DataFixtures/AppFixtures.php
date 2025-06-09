@@ -62,7 +62,7 @@ class AppFixtures extends Fixture
         // --- Priorities ---
         $priorityLabels = ['Low', 'Medium', 'High'];
         $priorityColors = [
-            'Low' => '#00FF00',     // vert clair
+            'Low' => '#17b1bf',     // bleu
             'Medium' => '#FFFF00',  // jaune
             'High' => '#FF0000',    // rouge
         ];
