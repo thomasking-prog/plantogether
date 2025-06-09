@@ -32,12 +32,14 @@ final class HomeController extends AbstractController
         $projet->setCreator($this->getUser())->setLabel('Test')->setStatut($statut);
 
         $user = $security->getUser();
-        //dd($_ENV['MAILER_DSN'] ?? getenv('MAILER_DSN'));
 
         $participations = $participateRepo->findBy(['member' => $user]);
 
-        // Puis les projets correspondants
-        $projects = array_map(fn($project) => $project->getProject(), $participations);
+        $projects = array_filter(
+            array_map(fn($p) => $p->getProject(), $participations),
+            fn($project) => $project->getStatut()?->getLabel() !== 'Done'
+        );
+
 
         //$em->persist($statut);
         //$em->persist($projet);

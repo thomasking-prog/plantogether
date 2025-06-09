@@ -206,7 +206,7 @@ final class ProjectController extends AbstractController
     {
         $this->denyIfNotProjectMember($project);
 
-        $entityManager->remove($project);
+        $project->setStatut($entityManager->getRepository(Statut::class)->findOneBy(['label' => 'Done']));
         $entityManager->flush();
 
         return new JsonResponse(['message' => 'Le projet a été supprimé avec succès.']);
